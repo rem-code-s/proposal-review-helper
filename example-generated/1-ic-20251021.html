@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Review Report</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            background-color: #0d1117;
+            color: #e6edf3;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #161b22;
+            min-height: 100vh;
+        }
+        .header {
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            padding: 20px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header .meta {
+            margin-top: 10px;
+            color: #8b949e;
+            font-size: 0.9em;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #8b949e;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #f0f6fc;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .commits-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .commits-table th,
+        .commits-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #21262d;
+        }
+        .commits-table th {
+            background-color: #161b22;
+            font-weight: 600;
+            color: #f0f6fc;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .commits-table tr:hover {
+            background-color: #21262d;
+        }
+        .commits-table tr:last-child td {
+            border-bottom: none;
+        }
+        .commit-hash {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #21262d;
+            color: #58a6ff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            border: 1px solid #30363d;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .commit-hash:hover {
+            background: #30363d;
+            color: #79c0ff;
+            border-color: #58a6ff;
+            text-decoration: none;
+        }
+        .commit-message {
+            color: #e6edf3;
+            max-width: 400px;
+        }
+        .commit-author {
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        .commit-date {
+            color: #8b949e;
+            font-size: 0.85em;
+        }
+        .files-list {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .files-list ul {
+            margin: 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        .files-list li {
+            margin-bottom: 3px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #8b949e;
+            padding: 2px 0;
+        }
+        .files-list li:before {
+            content: "📄 ";
+            margin-right: 8px;
+        }
+        .commit-detail {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .commit-header {
+            background: #161b22;
+            padding: 15px 20px;
+            border-bottom: 1px solid #30363d;
+        }
+        .commit-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .commit-hash-large {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #21262d;
+            color: #58a6ff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: 1px solid #30363d;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .commit-hash-large:hover {
+            background: #30363d;
+            color: #79c0ff;
+            border-color: #58a6ff;
+            text-decoration: none;
+        }
+        .commit-meta {
+            color: #8b949e;
+            font-size: 0.85em;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .commit-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .diff-container {
+            background: #0d1117;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .file-header {
+            background: #21262d;
+            padding: 8px 15px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.85em;
+            border-bottom: 1px solid #30363d;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .file-icon {
+            color: #58a6ff;
+        }
+        .hunk-header {
+            background: #161b22;
+            padding: 6px 15px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8em;
+            color: #8b949e;
+            border-bottom: 1px solid #21262d;
+        }
+        .line {
+            display: flex;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            border-bottom: 1px solid #21262d;
+            min-height: 18px;
+        }
+        .line:last-child {
+            border-bottom: none;
+        }
+        .line-number {
+            width: 40px;
+            padding: 1px 6px;
+            text-align: right;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            color: #8b949e;
+            user-select: none;
+            font-size: 0.75em;
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .line-content {
+            flex: 1;
+            padding: 1px 8px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: flex;
+            align-items: center;
+        }
+        .github-link {
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.8em;
+            position: relative;
+        }
+        .line:hover .github-link {
+            opacity: 1;
+        }
+        .github-link:hover {
+            color: #79c0ff;
+            text-decoration: underline;
+        }
+        .github-link::after {
+            content: attr(href);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #21262d;
+            color: #e6edf3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            border: 1px solid #30363d;
+        }
+        .github-link:hover::after {
+            opacity: 1;
+        }
+        .line.added {
+            background: #0d4429;
+        }
+        .line.added .line-number {
+            background: #1a472a;
+            color: #3fb950;
+        }
+        .line.added .line-content {
+            color: #a2d2a2;
+        }
+        .line.removed {
+            background: #490202;
+        }
+        .line.removed .line-number {
+            background: #5d1a1a;
+            color: #f85149;
+        }
+        .line.removed .line-content {
+            color: #ffa198;
+        }
+        .line.context .line-number {
+            color: #6e7681;
+        }
+        .line.context .line-content {
+            color: #e6edf3;
+        }
+        .toggle-button {
+            background: #238636;
+            color: #ffffff;
+            border: 1px solid #2ea043;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin: 8px 0;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .toggle-button:hover {
+            background: #2ea043;
+            border-color: #3fb950;
+        }
+        .toggle-button.secondary {
+            background: #21262d;
+            border-color: #30363d;
+            color: #8b949e;
+        }
+        .toggle-button.secondary:hover {
+            background: #30363d;
+            color: #e6edf3;
+        }
+        .collapsible {
+            display: none;
+        }
+        .collapsible.show {
+            display: block;
+        }
+        .commit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge.feat {
+            background: #1a472a;
+            color: #3fb950;
+        }
+        .badge.fix {
+            background: #490202;
+            color: #f85149;
+        }
+        .badge.chore {
+            background: #21262d;
+            color: #8b949e;
+        }
+        .badge.docs {
+            background: #1c2128;
+            color: #58a6ff;
+        }
+        .badge.refactor {
+            background: #2d1b69;
+            color: #a5a3ff;
+        }
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            z-index: 1000;
+        }
+        .scroll-to-top:hover {
+            background: #2ea043;
+        }
+        .scroll-to-top.show {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            .header {
+                padding: 15px 20px;
+            }
+            .header .meta {
+                flex-direction: column;
+                gap: 5px;
+            }
+            .commits-table {
+                font-size: 0.8em;
+            }
+            .commits-table th,
+            .commits-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Code Review</h1>
+            <div class="meta">
+                <div class="meta-item">
+                    <span>📊</span>
+                    <span><strong>Range:</strong> <code>51dd253f</code> → <code>286295f0</code></span>
+                </div>
+                <div class="meta-item">
+                    <span>📁</span>
+                    <span><strong>Path:</strong> <code>rs/registry/canister</code></span>
+                </div>
+                <div class="meta-item">
+                    <span>⏰</span>
+                    <span><strong>Generated:</strong> 2025-10-21 20:49</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📊 Summary</h2>
+                <div class="summary">
+                    <div class="stat-card">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">Commits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Files Changed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Lines Added</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Lines Removed</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📝 Commits</h2>
+                <table class="commits-table">
+                    <thead>
+                        <tr>
+                            <th>Hash</th>
+                            <th>Message</th>
+                            <th>Author</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="https://github.com/dfinity/ic/commit/9f2392f91153ba6c91eb34bfd899f4d8b66877a6" class="commit-hash" target="_blank">9f2392f91153ba6c91eb34bfd899f4d8b66877a6</a></td>
+                            <td>
+                                <span class="badge feat">feat</span>
+                                <span class="commit-message">feat: disable swapping if the subnet is halted (#7253)</span>
+                            </td>
+                            <td><span class="commit-author">Nikola Milosavljevic</span></td>
+                            <td><span class="commit-date">2025-10-16</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="https://github.com/dfinity/ic/commit/d709a8b8f44649ea58ad52e91d3c965919c45beb" class="commit-hash" target="_blank">d709a8b8f44649ea58ad52e91d3c965919c45beb</a></td>
+                            <td>
+                                <span class="badge chore">chore</span>
+                                <span class="commit-message">chore(nervous-system): Update changelog for release 2025-10-10 (#7195)</span>
+                            </td>
+                            <td><span class="commit-author">Jason Zhu</span></td>
+                            <td><span class="commit-date">2025-10-13</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>📁 Files Changed</h2>
+                <div class="files-list">
+                    <ul><li><code>rs/registry/canister/CHANGELOG.md</code></li><li><code>rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs</code></li><li><code>rs/registry/canister/unreleased_changelog.md</code></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🔍 Detailed Changes</h2>
+                <div class="commit-detail">
+                    <div class="commit-header">
+                        <div class="commit-title">
+                            <a href="https://github.com/dfinity/ic/commit/9f2392f91153ba6c91eb34bfd899f4d8b66877a6" class="commit-hash-large" target="_blank">9f2392f91153ba6c91eb34bfd899f4d8b66877a6</a>
+                            <span class="badge feat">feat</span>
+                        </div>
+                        <div class="commit-meta">
+                            <span>👤 Nikola Milosavljevic &lt;73236646+NikolaMilosa@users.noreply.github.com&gt;</span>
+                            <span>📅 2025-10-16</span>
+                            <span>📁 1 files</span>
+                        </div>
+                        <div style="margin-top: 8px; color: #e6edf3; font-size: 0.9em;">
+                            feat: disable swapping if the subnet is halted (#7253)
+                        </div>
+                        <div class="commit-actions">
+                            <button class="toggle-button secondary" onclick="toggleFiles('files-0')">📁 Files (1)</button>
+                            <button class="toggle-button" onclick="toggleDiff('diff-0')">🔍 Code Changes</button>
+                        </div>
+                        <div id="files-0" class="collapsible">
+                            <div class="files-list">
+                                <ul><li>rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs</li></ul></div></div>
+                        <div id="diff-0" class="collapsible">
+                            <div class="diff-container">
+                                <div class="line context"><span class="line-number">1</span><span class="line-content">commit 9f2392f91153ba6c91eb34bfd899f4d8b66877a6</span></div>
+<div class="line context"><span class="line-number">2</span><span class="line-content">Author: Nikola Milosavljevic &lt;73236646+NikolaMilosa@users.noreply.github.com&gt;</span></div>
+<div class="line context"><span class="line-number">3</span><span class="line-content">Date:   Thu Oct 16 12:44:11 2025 +0200</span></div>
+<div class="line context"><span class="line-number">4</span><span class="line-content"></span></div>
+<div class="line context"><span class="line-number">5</span><span class="line-content">    feat: disable swapping if the subnet is halted (#7253)</span></div>
+<div class="line context"><span class="line-number">6</span><span class="line-content">    </span></div>
+<div class="line context"><span class="line-number">7</span><span class="line-content">    Moving out nodes from the subnet during a recovery might cause certain</span></div>
+<div class="line context"><span class="line-number">8</span><span class="line-content">    edge cases. To be on the safe side this PR disabled swapping if the</span></div>
+<div class="line context"><span class="line-number">9</span><span class="line-content">    subnet is halted in the registry.</span></div>
+<div class="line context"><span class="line-number">10</span><span class="line-content"></span></div>
+<div class="line context"><span class="line-number">11</span><span class="line-content">diff --git a/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs b/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs</span></div>
+<div class="line context"><span class="line-number">12</span><span class="line-content">index 7f1829b2c8..eea5f7977d 100644</span></div>
+<div class="file-header">--- a/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs</div>
+<div class="file-header">+++ b/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs</div>
+<div class="hunk-header">@@ -135,7 +135,7 @@ impl Registry {</div>
+<div class="line context"><span class="line-number">135</span><span class="line-content">         let reservation =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L135" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">136</span><span class="line-content">             SWAP_LIMITER.with_borrow_mut(|limiter| limiter.try_reserve(caller, subnet_id, now))?;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L136" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">137</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L137" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-138</span><span class="line-content">        self.validate_node_swap(old_node_id, new_node_id, caller)?;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L138" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+138</span><span class="line-content">        self.validate_node_swap(old_node_id, new_node_id, caller, subnet_id)?;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L138" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">139</span><span class="line-content">         self.swap_nodes_in_subnet(subnet_id, old_node_id, new_node_id)?;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L139" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">140</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L140" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">141</span><span class="line-content">         SWAP_LIMITER.with_borrow_mut(|limiter| limiter.commit(reservation, now));<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L141" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -175,6 +175,7 @@ impl Registry {</div>
+<div class="line context"><span class="line-number">175</span><span class="line-content">         old_node_id: PrincipalId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L175" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">176</span><span class="line-content">         new_node_id: PrincipalId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L176" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">177</span><span class="line-content">         caller: PrincipalId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L177" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+178</span><span class="line-content">        subnet_id: SubnetId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L178" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">179</span><span class="line-content">     ) -&gt; Result&lt;(), SwapError&gt; {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L179" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">180</span><span class="line-content">         // Ensure that the nodes exist<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L180" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">181</span><span class="line-content">         let old_node_id = NodeId::new(old_node_id);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L181" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -218,6 +219,13 @@ impl Registry {</div>
+<div class="line context"><span class="line-number">219</span><span class="line-content">             });<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L219" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">220</span><span class="line-content">         }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L220" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">221</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L221" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+222</span><span class="line-content">        // Disalbe swapping of nodes during recovery, when the subnet<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L222" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+223</span><span class="line-content">        // is halted.<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L223" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+224</span><span class="line-content">        let subnet_record = self.get_subnet_or_panic(subnet_id);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L224" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+225</span><span class="line-content">        if subnet_record.is_halted {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L225" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+226</span><span class="line-content">            return Err(SwapError::SubnetHalted { subnet_id });<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L226" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+227</span><span class="line-content">        }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L227" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+228</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L228" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">229</span><span class="line-content">         Ok(())<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L229" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">230</span><span class="line-content">     }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L230" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">231</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L231" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -302,6 +310,9 @@ pub enum SwapError {</div>
+<div class="line context"><span class="line-number">310</span><span class="line-content">         caller: PrincipalId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L310" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">311</span><span class="line-content">         operator: PrincipalId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L311" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">312</span><span class="line-content">     },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L312" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+313</span><span class="line-content">    SubnetHalted {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L313" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+314</span><span class="line-content">        subnet_id: SubnetId,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L314" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+315</span><span class="line-content">    },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L315" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">316</span><span class="line-content"> }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L316" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">317</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L317" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">318</span><span class="line-content"> impl Display for SwapError {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L318" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -339,6 +350,9 @@ impl Display for SwapError {</div>
+<div class="line context"><span class="line-number">350</span><span class="line-content">                 SwapError::CallerOperatorMismatch { caller, operator } =&gt; format!(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L350" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">351</span><span class="line-content">                     &quot;Caller {caller} isn&#x27;t an operator of the specified nodes. Expected operator {operator}&quot;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L351" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">352</span><span class="line-content">                 ),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L352" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+353</span><span class="line-content">                SwapError::SubnetHalted { subnet_id } =&gt; format!(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L353" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+354</span><span class="line-content">                    &quot;Subnet {subnet_id} is halted and swapping is disabled. This is likely due to an on going recovery on that subnet&quot;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L354" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+355</span><span class="line-content">                ),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L355" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">356</span><span class="line-content">             }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L356" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">357</span><span class="line-content">         )<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L357" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">358</span><span class="line-content">     }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L358" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -502,6 +516,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">516</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L516" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">517</span><span class="line-content">     fn get_mutations_from_node_information(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L517" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">518</span><span class="line-content">         node_information: &amp;[NodeInformation],<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L518" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+519</span><span class="line-content">        halt_subnets: bool,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L519" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">520</span><span class="line-content">     ) -&gt; Vec&lt;RegistryMutation&gt; {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L520" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">521</span><span class="line-content">         let mut mutations = vec![];<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L521" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">522</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L522" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -544,6 +559,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">559</span><span class="line-content">             let node_ids: Vec&lt;_&gt; = nodes.iter().map(|n| n.node_id()).collect();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L559" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">560</span><span class="line-content">             let mut subnet_record = get_invariant_compliant_subnet_record(node_ids.clone());<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L560" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">561</span><span class="line-content">             subnet_record.subnet_type = i32::from(SubnetType::System);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L561" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+562</span><span class="line-content">            subnet_record.is_halted = halt_subnets;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L562" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">563</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L563" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">564</span><span class="line-content">             mutations.push(upsert(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L564" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">565</span><span class="line-content">                 make_subnet_record_key(*subnet),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L565" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -578,7 +594,9 @@ mod tests {</div>
+<div class="line context"><span class="line-number">594</span><span class="line-content">         (keys.node_id(), keys)<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L594" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">595</span><span class="line-content">     }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L595" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">596</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L596" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-581</span><span class="line-content">    fn setup_registry_for_test() -&gt; (NodeId, NodeId, SubnetId, PrincipalId, Registry) {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L581" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+597</span><span class="line-content">    fn setup_registry_for_test(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L597" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+598</span><span class="line-content">        halt_subnets: bool,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L598" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+599</span><span class="line-content">    ) -&gt; (NodeId, NodeId, SubnetId, PrincipalId, Registry) {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L599" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">600</span><span class="line-content">         let mut registry = invariant_compliant_registry(0);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L600" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">601</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L601" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">602</span><span class="line-content">         let subnet_id = SubnetId::new(PrincipalId::new_subnet_test_id(1));<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L602" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -586,20 +604,23 @@ mod tests {</div>
+<div class="line context"><span class="line-number">604</span><span class="line-content">         let (new_node_id, new_node_keys) = get_new_node_and_keys();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L604" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">605</span><span class="line-content">         let operator_id = PrincipalId::new_user_test_id(1);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L605" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">606</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L606" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-589</span><span class="line-content">        let mutations = get_mutations_from_node_information(&amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L589" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-590</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L590" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-591</span><span class="line-content">                node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L591" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-592</span><span class="line-content">                subnet_id: Some(subnet_id),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L592" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-593</span><span class="line-content">                operator: operator_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L593" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-594</span><span class="line-content">                valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L594" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-595</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L595" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-596</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L596" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-597</span><span class="line-content">                node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L597" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-598</span><span class="line-content">                subnet_id: None,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L598" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-599</span><span class="line-content">                operator: operator_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L599" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-600</span><span class="line-content">                valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L600" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-601</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L601" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-602</span><span class="line-content">        ]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L602" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+607</span><span class="line-content">        let mutations = get_mutations_from_node_information(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L607" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+608</span><span class="line-content">            &amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L608" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+609</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L609" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+610</span><span class="line-content">                    node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L610" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+611</span><span class="line-content">                    subnet_id: Some(subnet_id),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L611" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+612</span><span class="line-content">                    operator: operator_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L612" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+613</span><span class="line-content">                    valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L613" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+614</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L614" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+615</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L615" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+616</span><span class="line-content">                    node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L616" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+617</span><span class="line-content">                    subnet_id: None,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L617" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+618</span><span class="line-content">                    operator: operator_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L618" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+619</span><span class="line-content">                    valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L619" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+620</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L620" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+621</span><span class="line-content">            ],<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L621" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+622</span><span class="line-content">            halt_subnets,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L622" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+623</span><span class="line-content">        );<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L623" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">624</span><span class="line-content">         registry.apply_mutations_for_test(mutations);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L624" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">625</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L625" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">626</span><span class="line-content">         (old_node_id, new_node_id, subnet_id, operator_id, registry)<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L626" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -610,7 +631,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">631</span><span class="line-content">         let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L631" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">632</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L632" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">633</span><span class="line-content">         let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L633" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-613</span><span class="line-content">            setup_registry_for_test();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L613" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+634</span><span class="line-content">            setup_registry_for_test(false);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L634" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">635</span><span class="line-content">         test_set_swapping_enabled_subnets(vec![subnet_id]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L635" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">636</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L636" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">637</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L637" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -642,7 +663,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">663</span><span class="line-content">         let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L663" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">664</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L664" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">665</span><span class="line-content">         let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L665" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-645</span><span class="line-content">            setup_registry_for_test();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L645" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+666</span><span class="line-content">            setup_registry_for_test(false);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L666" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">667</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L667" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">668</span><span class="line-content">         test_set_swapping_whitelisted_callers(vec![operator_id]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L668" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">669</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L669" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -758,7 +779,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">779</span><span class="line-content">     fn rate_limits_e2e_respected() {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L779" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">780</span><span class="line-content">         let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L780" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">781</span><span class="line-content">         let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L781" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-761</span><span class="line-content">            setup_registry_for_test();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L761" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+782</span><span class="line-content">            setup_registry_for_test(false);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L782" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">783</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L783" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">784</span><span class="line-content">         let now = now_system_time();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L784" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">785</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L785" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -843,20 +864,23 @@ mod tests {</div>
+<div class="line context"><span class="line-number">864</span><span class="line-content">         let operator_id_1 = PrincipalId::new_user_test_id(1);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L864" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">865</span><span class="line-content">         let operator_id_2 = PrincipalId::new_user_test_id(2);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L865" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">866</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L866" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-846</span><span class="line-content">        let mutations = get_mutations_from_node_information(&amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L846" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-847</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L847" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-848</span><span class="line-content">                node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L848" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-849</span><span class="line-content">                subnet_id: Some(subnet_id),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L849" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-850</span><span class="line-content">                operator: operator_id_1,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L850" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-851</span><span class="line-content">                valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L851" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-852</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L852" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-853</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L853" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-854</span><span class="line-content">                node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L854" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-855</span><span class="line-content">                subnet_id: None,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L855" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-856</span><span class="line-content">                operator: operator_id_2,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L856" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-857</span><span class="line-content">                valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L857" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-858</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L858" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-859</span><span class="line-content">        ]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L859" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+867</span><span class="line-content">        let mutations = get_mutations_from_node_information(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L867" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+868</span><span class="line-content">            &amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L868" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+869</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L869" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+870</span><span class="line-content">                    node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L870" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+871</span><span class="line-content">                    subnet_id: Some(subnet_id),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L871" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+872</span><span class="line-content">                    operator: operator_id_1,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L872" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+873</span><span class="line-content">                    valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L873" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+874</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L874" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+875</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L875" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+876</span><span class="line-content">                    node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L876" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+877</span><span class="line-content">                    subnet_id: None,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L877" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+878</span><span class="line-content">                    operator: operator_id_2,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L878" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+879</span><span class="line-content">                    valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L879" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+880</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L880" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+881</span><span class="line-content">            ],<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L881" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+882</span><span class="line-content">            false,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L882" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+883</span><span class="line-content">        );<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L883" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">884</span><span class="line-content">         registry.apply_mutations_for_test(mutations);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L884" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">885</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L885" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">886</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L886" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -882,7 +906,7 @@ mod tests {</div>
+<div class="line context"><span class="line-number">906</span><span class="line-content">     fn nodes_not_owned_by_the_caller() {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L906" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">907</span><span class="line-content">         let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L907" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">908</span><span class="line-content">         let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L908" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-885</span><span class="line-content">            setup_registry_for_test();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L885" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+909</span><span class="line-content">            setup_registry_for_test(false);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L909" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">910</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L910" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">911</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L911" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">912</span><span class="line-content">             old_node_id: Some(old_node_id.get()),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L912" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -920,20 +944,23 @@ mod tests {</div>
+<div class="line context"><span class="line-number">944</span><span class="line-content">         let operator_id_1 = PrincipalId::new_user_test_id(1);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L944" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">945</span><span class="line-content">         let operator_id_2 = PrincipalId::new_user_test_id(2);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L945" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">946</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L946" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-923</span><span class="line-content">        let mutations = get_mutations_from_node_information(&amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L923" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-924</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L924" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-925</span><span class="line-content">                node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L925" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-926</span><span class="line-content">                subnet_id: Some(subnet_id_1),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L926" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-927</span><span class="line-content">                operator: operator_id_1,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L927" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-928</span><span class="line-content">                valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L928" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-929</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L929" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-930</span><span class="line-content">            NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L930" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-931</span><span class="line-content">                node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L931" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-932</span><span class="line-content">                subnet_id: Some(subnet_id_2),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L932" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-933</span><span class="line-content">                operator: operator_id_2,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L933" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-934</span><span class="line-content">                valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L934" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-935</span><span class="line-content">            },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L935" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-936</span><span class="line-content">        ]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L936" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+947</span><span class="line-content">        let mutations = get_mutations_from_node_information(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L947" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+948</span><span class="line-content">            &amp;[<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L948" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+949</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L949" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+950</span><span class="line-content">                    node_id: old_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L950" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+951</span><span class="line-content">                    subnet_id: Some(subnet_id_1),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L951" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+952</span><span class="line-content">                    operator: operator_id_1,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L952" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+953</span><span class="line-content">                    valid_pks: old_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L953" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+954</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L954" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+955</span><span class="line-content">                NodeInformation {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L955" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+956</span><span class="line-content">                    node_id: new_node_id,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L956" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+957</span><span class="line-content">                    subnet_id: Some(subnet_id_2),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L957" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+958</span><span class="line-content">                    operator: operator_id_2,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L958" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+959</span><span class="line-content">                    valid_pks: new_node_keys,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L959" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+960</span><span class="line-content">                },<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L960" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+961</span><span class="line-content">            ],<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L961" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+962</span><span class="line-content">            false,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L962" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+963</span><span class="line-content">        );<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L963" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">964</span><span class="line-content">         registry.apply_mutations_for_test(mutations);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L964" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">965</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L965" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">966</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L966" class="github-link" target="_blank">🔗</a></span></div>
+<div class="hunk-header">@@ -958,11 +985,35 @@ mod tests {</div>
+<div class="line context"><span class="line-number">985</span><span class="line-content">         );<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L985" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">986</span><span class="line-content">     }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L986" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">987</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L987" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+988</span><span class="line-content">    #[test]<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L988" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+989</span><span class="line-content">    fn subnet_halted() {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L989" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+990</span><span class="line-content">        let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L990" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+991</span><span class="line-content">        let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L991" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+992</span><span class="line-content">            setup_registry_for_test(true);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L992" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+993</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L993" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+994</span><span class="line-content">        let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L994" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+995</span><span class="line-content">            old_node_id: Some(old_node_id.get()),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L995" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+996</span><span class="line-content">            new_node_id: Some(new_node_id.get()),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L996" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+997</span><span class="line-content">        };<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L997" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+998</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L998" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+999</span><span class="line-content">        test_set_swapping_whitelisted_callers(vec![operator_id]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L999" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1000</span><span class="line-content">        test_set_swapping_enabled_subnets(vec![subnet_id]);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1000" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1001</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1001" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1002</span><span class="line-content">        let response = registry<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1002" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1003</span><span class="line-content">            .swap_nodes_inner(payload, operator_id, now_system_time())<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1003" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1004</span><span class="line-content">            .expect_err(&quot;Should error out&quot;);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1004" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1005</span><span class="line-content">        let expected_err = SwapError::SubnetHalted { subnet_id };<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1005" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1006</span><span class="line-content">        assert_eq!(<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1006" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1007</span><span class="line-content">            response, expected_err,<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1007" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1008</span><span class="line-content">            &quot;Expected err {expected_err:?} but got: {response:?}&quot;<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1008" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1009</span><span class="line-content">        );<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1009" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1010</span><span class="line-content">    }<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1010" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1011</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1011" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1012</span><span class="line-content">     #[test]<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1012" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1013</span><span class="line-content">     fn e2e_valid_swap() {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1013" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1014</span><span class="line-content">         let _temp_enable_feat = temporarily_enable_node_swapping();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1014" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1015</span><span class="line-content">         let (old_node_id, new_node_id, subnet_id, operator_id, mut registry) =<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1015" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-965</span><span class="line-content">            setup_registry_for_test();<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6~1/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L965" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+1016</span><span class="line-content">            setup_registry_for_test(false);<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1016" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1017</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1017" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1018</span><span class="line-content">         let payload = SwapNodeInSubnetDirectlyPayload {<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1018" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">1019</span><span class="line-content">             old_node_id: Some(old_node_id.get()),<a href="https://github.com/dfinity/ic/blob/9f2392f91153ba6c91eb34bfd899f4d8b66877a6/rs/registry/canister/src/mutations/do_swap_node_in_subnet_directly.rs#L1019" class="github-link" target="_blank">🔗</a></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="commit-detail">
+                    <div class="commit-header">
+                        <div class="commit-title">
+                            <a href="https://github.com/dfinity/ic/commit/d709a8b8f44649ea58ad52e91d3c965919c45beb" class="commit-hash-large" target="_blank">d709a8b8f44649ea58ad52e91d3c965919c45beb</a>
+                            <span class="badge chore">chore</span>
+                        </div>
+                        <div class="commit-meta">
+                            <span>👤 Jason Zhu &lt;133917836+jasonz-dfinity@users.noreply.github.com&gt;</span>
+                            <span>📅 2025-10-13</span>
+                            <span>📁 2 files</span>
+                        </div>
+                        <div style="margin-top: 8px; color: #e6edf3; font-size: 0.9em;">
+                            chore(nervous-system): Update changelog for release 2025-10-10 (#7195)
+                        </div>
+                        <div class="commit-actions">
+                            <button class="toggle-button secondary" onclick="toggleFiles('files-1')">📁 Files (2)</button>
+                            <button class="toggle-button" onclick="toggleDiff('diff-1')">🔍 Code Changes</button>
+                        </div>
+                        <div id="files-1" class="collapsible">
+                            <div class="files-list">
+                                <ul><li>rs/registry/canister/CHANGELOG.md</li><li>rs/registry/canister/unreleased_changelog.md</li></ul></div></div>
+                        <div id="diff-1" class="collapsible">
+                            <div class="diff-container">
+                                <div class="line context"><span class="line-number">1</span><span class="line-content">commit d709a8b8f44649ea58ad52e91d3c965919c45beb</span></div>
+<div class="line context"><span class="line-number">2</span><span class="line-content">Author: Jason Zhu &lt;133917836+jasonz-dfinity@users.noreply.github.com&gt;</span></div>
+<div class="line context"><span class="line-number">3</span><span class="line-content">Date:   Mon Oct 13 02:42:17 2025 -0700</span></div>
+<div class="line context"><span class="line-number">4</span><span class="line-content"></span></div>
+<div class="line context"><span class="line-number">5</span><span class="line-content">    chore(nervous-system): Update changelog for release 2025-10-10 (#7195)</span></div>
+<div class="line context"><span class="line-number">6</span><span class="line-content">    </span></div>
+<div class="line context"><span class="line-number">7</span><span class="line-content">    Update CHANGELOG.md for today&#x27;s release.</span></div>
+<div class="line context"><span class="line-number">8</span><span class="line-content">    </span></div>
+<div class="line context"><span class="line-number">9</span><span class="line-content">    ## NNS</span></div>
+<div class="line context"><span class="line-number">10</span><span class="line-content">      - [138913](https://dashboard.internetcomputer.org/proposal/138913)</span></div>
+<div class="line context"><span class="line-number">11</span><span class="line-content">      - [138914](https://dashboard.internetcomputer.org/proposal/138914)</span></div>
+<div class="line context"><span class="line-number">12</span><span class="line-content">    </span></div>
+<div class="line context"><span class="line-number">13</span><span class="line-content">    ## SNS</span></div>
+<div class="line context"><span class="line-number">14</span><span class="line-content"></span></div>
+<div class="line context"><span class="line-number">15</span><span class="line-content">diff --git a/rs/registry/canister/CHANGELOG.md b/rs/registry/canister/CHANGELOG.md</span></div>
+<div class="line context"><span class="line-number">16</span><span class="line-content">index ed18f95096..8c775d8d10 100644</span></div>
+<div class="file-header">--- a/rs/registry/canister/CHANGELOG.md</div>
+<div class="file-header">+++ b/rs/registry/canister/CHANGELOG.md</div>
+<div class="hunk-header">@@ -7,8 +7,22 @@ The process that populates this file is described in</div>
+<div class="line context"><span class="line-number">7</span><span class="line-content"> `rs/nervous_system/changelog_process.md`. In general though, the entries you see<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L7" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">8</span><span class="line-content"> here were moved from the adjacent `unreleased_changelog.md` file.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L8" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">9</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L9" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+10</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L10" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">11</span><span class="line-content"> INSERT NEW RELEASES HERE<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L11" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">12</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L12" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+13</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L13" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+14</span><span class="line-content"># 2025-10-10: Proposal 138914<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L14" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+15</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L15" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+16</span><span class="line-content">http://dashboard.internetcomputer.org/proposal/138914<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L16" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+17</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L17" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+18</span><span class="line-content">## Added<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L18" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+19</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L19" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+20</span><span class="line-content">- Added `registry_latest_version` as an exposed metric at http endpoint `/metrics`.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L20" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+21</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L21" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+22</span><span class="line-content">## Changed<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L22" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+23</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L23" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+24</span><span class="line-content">- Added rate limiting to certain registry operations.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L24" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+25</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L25" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">26</span><span class="line-content"> # 2025-10-03: Proposal 138825<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L26" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">27</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L27" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">28</span><span class="line-content"> http://dashboard.internetcomputer.org/proposal/138825<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L28" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">29</span><span class="line-content">diff --git a/rs/registry/canister/unreleased_changelog.md b/rs/registry/canister/unreleased_changelog.md<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L29" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">30</span><span class="line-content">index 909742f7b7..94126a0ff4 100644<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/CHANGELOG.md#L30" class="github-link" target="_blank">🔗</a></span></div>
+<div class="file-header">--- a/rs/registry/canister/unreleased_changelog.md</div>
+<div class="file-header">+++ b/rs/registry/canister/unreleased_changelog.md</div>
+<div class="hunk-header">@@ -4,16 +4,13 @@ In general, upcoming/unreleased behavior changes are described here. For details</div>
+<div class="line context"><span class="line-number">4</span><span class="line-content"> on the process that this file is part of, see<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L4" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">5</span><span class="line-content"> `rs/nervous_system/changelog_process.md`.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L5" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">6</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L6" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line added"><span class="line-number">+7</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L7" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">8</span><span class="line-content"> # Next Upgrade Proposal<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L8" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">9</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L9" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">10</span><span class="line-content"> ## Added<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L10" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">11</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L11" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-11</span><span class="line-content">- Added `registry_latest_version` as an exposed metric at http endpoint `/metrics`.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb~1/rs/registry/canister/unreleased_changelog.md#L11" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-12</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb~1/rs/registry/canister/unreleased_changelog.md#L12" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">12</span><span class="line-content"> ## Changed<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L12" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">13</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L13" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-15</span><span class="line-content">- Added rate limiting to certain registry operations.<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb~1/rs/registry/canister/unreleased_changelog.md#L15" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line removed"><span class="line-number">-16</span><span class="line-content"><a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb~1/rs/registry/canister/unreleased_changelog.md#L16" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">14</span><span class="line-content"> ## Deprecated<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L14" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">15</span><span class="line-content"> <a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L15" class="github-link" target="_blank">🔗</a></span></div>
+<div class="line context"><span class="line-number">16</span><span class="line-content"> ## Removed<a href="https://github.com/dfinity/ic/blob/d709a8b8f44649ea58ad52e91d3c965919c45beb/rs/registry/canister/unreleased_changelog.md#L16" class="github-link" target="_blank">🔗</a></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="scroll-to-top" onclick="scrollToTop()" id="scrollBtn">↑</button>
+    
+    <script>
+        function toggleFiles(id) {
+            const element = document.getElementById(id);
+            element.classList.toggle('show');
+        }
+        
+        function toggleDiff(id) {
+            const element = document.getElementById(id);
+            element.classList.toggle('show');
+        }
+        
+        
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', function() {
+            const scrollBtn = document.getElementById('scrollBtn');
+            if (window.pageYOffset > 300) {
+                scrollBtn.classList.add('show');
+            } else {
+                scrollBtn.classList.remove('show');
+            }
+        });
+        
+        // Auto-expand first commit for better UX
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstDiff = document.getElementById('diff-0');
+            if (firstDiff) {
+                firstDiff.classList.add('show');
+            }
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'k':
+                            e.preventDefault();
+                            scrollToTop();
+                            break;
+                        case 'j':
+                            e.preventDefault();
+                            // Toggle first diff
+                            const firstDiff = document.getElementById('diff-0');
+                            if (firstDiff) {
+                                firstDiff.classList.toggle('show');
+                            }
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
