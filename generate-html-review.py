@@ -12,6 +12,7 @@ import argparse
 import html
 import tempfile
 import shutil
+import difflib
 
 def clone_external_repo(repo_url):
     """Clone external repository to temporary directory"""
@@ -207,13 +208,52 @@ def format_diff_as_html(diff_text, commit_hash, repo_url=None):
     """Convert git diff to HTML with syntax highlighting and GitHub links"""
     if not diff_text:
         return ""
+
+    def _github_link_for(current_file, commit_hash_for_link, line_no):
+        if not current_file or line_no <= 0:
+            return ""
+        github_url = f"{repo_url}/blob/{commit_hash_for_link}/{current_file}#L{line_no}"
+        return f'<a href="{github_url}" class="github-link" target="_blank">🔗</a>'
+
+    def _render_char_diff(old_text, new_text):
+        """
+        Returns (old_html, new_html) with intraline highlights.
+
+        - old_html uses .diff-char-del for deleted/replaced ranges
+        - new_html uses .diff-char-ins for inserted/replaced ranges
+        """
+        sm = difflib.SequenceMatcher(a=old_text, b=new_text)
+        old_parts = []
+        new_parts = []
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag == "equal":
+                old_parts.append(html.escape(old_text[i1:i2]))
+                new_parts.append(html.escape(new_text[j1:j2]))
+            elif tag == "delete":
+                old_parts.append(f'<span class="diff-char-del">{html.escape(old_text[i1:i2])}</span>')
+            elif tag == "insert":
+                new_parts.append(f'<span class="diff-char-ins">{html.escape(new_text[j1:j2])}</span>')
+            elif tag == "replace":
+                old_parts.append(f'<span class="diff-char-del">{html.escape(old_text[i1:i2])}</span>')
+                new_parts.append(f'<span class="diff-char-ins">{html.escape(new_text[j1:j2])}</span>')
+        return "".join(old_parts), "".join(new_parts)
+
+    def _emit_removed(line_text, old_no, current_file):
+        link = _github_link_for(current_file, f"{commit_hash}~1", old_no)
+        return f'<div class="line removed"><span class="line-number">-{old_no}</span><span class="line-content">{line_text}{link}</span></div>'
+
+    def _emit_added(line_text, new_no, current_file):
+        link = _github_link_for(current_file, commit_hash, new_no)
+        return f'<div class="line added"><span class="line-number">+{new_no}</span><span class="line-content">{line_text}{link}</span></div>'
     
     lines = diff_text.split('\n')
     html_lines = []
     current_file = None
     line_numbers = {'old': 0, 'new': 0}
     
-    for line in lines:
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         if line.startswith('+++') or line.startswith('---'):
             # File headers
             if line.startswith('+++'):
@@ -227,6 +267,7 @@ def format_diff_as_html(diff_text, commit_hash, repo_url=None):
                 if current_file and current_file.startswith('a/'):
                     current_file = current_file[2:]
             html_lines.append(f'<div class="file-header">{html.escape(line)}</div>')
+            i += 1
         elif line.startswith('@@'):
             # Hunk headers - parse line numbers
             import re
@@ -235,31 +276,59 @@ def format_diff_as_html(diff_text, commit_hash, repo_url=None):
                 line_numbers['old'] = int(match.group(1)) - 1
                 line_numbers['new'] = int(match.group(2)) - 1
             html_lines.append(f'<div class="hunk-header">{html.escape(line)}</div>')
-        elif line.startswith('+'):
-            # Added lines
-            line_numbers['new'] += 1
-            github_link = ""
-            if current_file and line_numbers['new'] > 0:
-                github_url = f"{repo_url}/blob/{commit_hash}/{current_file}#L{line_numbers['new']}"
-                github_link = f'<a href="{github_url}" class="github-link" target="_blank">🔗</a>'
-            html_lines.append(f'<div class="line added"><span class="line-number">+{line_numbers["new"]}</span><span class="line-content">{html.escape(line[1:])}{github_link}</span></div>')
+            i += 1
         elif line.startswith('-'):
-            # Removed lines
-            line_numbers['old'] += 1
-            github_link = ""
-            if current_file and line_numbers['old'] > 0:
-                github_url = f"{repo_url}/blob/{commit_hash}~1/{current_file}#L{line_numbers['old']}"
-                github_link = f'<a href="{github_url}" class="github-link" target="_blank">🔗</a>'
-            html_lines.append(f'<div class="line removed"><span class="line-number">-{line_numbers["old"]}</span><span class="line-content">{html.escape(line[1:])}{github_link}</span></div>')
+            # Possible "replacement block": a run of '-' lines followed by a run of '+' lines.
+            removed_lines = []
+            while i < len(lines) and lines[i].startswith('-') and not lines[i].startswith('---'):
+                removed_lines.append(lines[i][1:])  # strip prefix
+                i += 1
+
+            added_lines = []
+            j = i
+            while j < len(lines) and lines[j].startswith('+') and not lines[j].startswith('+++'):
+                added_lines.append(lines[j][1:])  # strip prefix
+                j += 1
+
+            # If we have both, treat as modified lines and compute intraline diffs line-by-line.
+            if added_lines:
+                pair_count = min(len(removed_lines), len(added_lines))
+                for k in range(pair_count):
+                    line_numbers['old'] += 1
+                    line_numbers['new'] += 1
+                    old_html, new_html = _render_char_diff(removed_lines[k], added_lines[k])
+                    html_lines.append(_emit_removed(old_html, line_numbers['old'], current_file))
+                    html_lines.append(_emit_added(new_html, line_numbers['new'], current_file))
+
+                # Unpaired trailing removals/additions get normal line-level styling.
+                for k in range(pair_count, len(removed_lines)):
+                    line_numbers['old'] += 1
+                    html_lines.append(_emit_removed(html.escape(removed_lines[k]), line_numbers['old'], current_file))
+                for k in range(pair_count, len(added_lines)):
+                    line_numbers['new'] += 1
+                    html_lines.append(_emit_added(html.escape(added_lines[k]), line_numbers['new'], current_file))
+
+                i = j
+            else:
+                # Pure removals
+                for removed_text in removed_lines:
+                    line_numbers['old'] += 1
+                    html_lines.append(_emit_removed(html.escape(removed_text), line_numbers['old'], current_file))
         else:
             # Context lines
-            line_numbers['old'] += 1
-            line_numbers['new'] += 1
-            github_link = ""
-            if current_file and line_numbers['new'] > 0:
-                github_url = f"{repo_url}/blob/{commit_hash}/{current_file}#L{line_numbers['new']}"
-                github_link = f'<a href="{github_url}" class="github-link" target="_blank">🔗</a>'
-            html_lines.append(f'<div class="line context"><span class="line-number">{line_numbers["new"]}</span><span class="line-content">{html.escape(line)}{github_link}</span></div>')
+            if line.startswith('+') and not line.startswith('+++'):
+                # Pure additions (not preceded by removals)
+                line_numbers['new'] += 1
+                html_lines.append(_emit_added(html.escape(line[1:]), line_numbers['new'], current_file))
+            elif line.startswith('\\'):
+                # "\ No newline at end of file" - don't affect line numbers
+                html_lines.append(f'<div class="line context"><span class="line-number"></span><span class="line-content">{html.escape(line)}</span></div>')
+            else:
+                line_numbers['old'] += 1
+                line_numbers['new'] += 1
+                link = _github_link_for(current_file, commit_hash, line_numbers['new'])
+                html_lines.append(f'<div class="line context"><span class="line-number">{line_numbers["new"]}</span><span class="line-content">{html.escape(line)}{link}</span></div>')
+            i += 1
     
     return '\n'.join(html_lines)
 
@@ -637,17 +706,19 @@ def generate_html_report(start_commit, end_commit, paths=None, output_file=None,
             opacity: 1;
         }
         .line.added {
-            background: #0d4429;
+            /* subtle line-level highlight */
+            background: rgba(46, 160, 67, 0.18);
         }
         .line.added .line-number {
             background: #1a472a;
             color: #3fb950;
         }
         .line.added .line-content {
-            color: #a2d2a2;
+            color: #c7f0c7;
         }
         .line.removed {
-            background: #490202;
+            /* subtle line-level highlight */
+            background: rgba(248, 81, 73, 0.16);
         }
         .line.removed .line-number {
             background: #5d1a1a;
@@ -655,6 +726,19 @@ def generate_html_report(start_commit, end_commit, paths=None, output_file=None,
         }
         .line.removed .line-content {
             color: #ffa198;
+        }
+        /* Per-character/intraline diff highlight (richer than line bg) */
+        .diff-char-ins {
+            background: rgba(46, 160, 67, 0.45);
+            color: #e6ffed;
+            border-radius: 3px;
+            padding: 0 1px;
+        }
+        .diff-char-del {
+            background: rgba(248, 81, 73, 0.40);
+            color: #ffeef0;
+            border-radius: 3px;
+            padding: 0 1px;
         }
         .line.context .line-number {
             color: #6e7681;
